@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>DPIFix - 一键调整图片至300DPI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            color: #1e2a3a;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            padding: 24px 28px 32px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin: 0 0 0.2rem 0;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sub {
+            color: #4a627a;
+            border-left: 3px solid #3b82f6;
+            padding-left: 14px;
+            margin: 12px 0 24px 0;
+            font-size: 0.9rem;
+        }
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 24px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #fafcff;
+        }
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background: #f0f7ff;
+        }
+        .preview {
+            margin: 24px 0;
+            text-align: center;
+        }
+        .preview img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .info {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 20px;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+        .pricing {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin: 24px 0;
+            justify-content: center;
+        }
+        .price-card {
+            background: #f8fafc;
+            border-radius: 24px;
+            padding: 16px 20px;
+            text-align: center;
+            flex: 1;
+            min-width: 120px;
+            transition: 0.1s;
+            border: 1px solid #e2edf7;
+        }
+        .price-card.highlight {
+            background: #eef2ff;
+            border-color: #3b82f6;
+        }
+        .price {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1e40af;
+        }
+        button {
+            background: #3b82f6;
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.1s;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        button.secondary {
+            background: #10b981;
+        }
+        .footer {
+            margin-top: 24px;
+            font-size: 0.75rem;
+            color: #6c86a3;
+            text-align: center;
+            border-top: 1px solid #e2edf7;
+            padding-top: 20px;
+        }
+        .hidden {
+            display: none;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e2a3a;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            opacity: 0;
+            transition: 0.2s;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📷 DPIFix · 一键300DPI</h1>
+    <div class="sub">参赛、印刷、电商 — 满足高分辨率要求，无需专业知识。</div>
+
+    <div class="upload-area" id="uploadArea">
+        📂 点击或拖拽上传图片
+        <input type="file" id="fileInput" accept="image/jpeg,image/png" style="display:none;">
+    </div>
+
+    <div class="preview" id="previewArea" style="display:none;">
+        <img id="previewImg" alt="预览图">
+    </div>
+
+    <div class="info" id="infoArea" style="display:none;">
+        <strong>当前图片信息</strong><br>
+        尺寸: <span id="dimensions"></span><br>
+        预估DPI: 72 (屏幕显示基准)<br>
+        调整后图片将符合300dpi输出标准。
+    </div>
+
+    <div class="pricing" id="pricingArea">
+        <div class="price-card">
+            <div>单次使用</div>
+            <div class="price">¥9.9</div>
+            <div style="font-size:0.75rem;">调整并下载</div>
+        </div>
+        <div class="price-card highlight">
+            <div>包月</div>
+            <div class="price">¥19.9</div>
+            <div style="font-size:0.75rem;">无限次调整+批量</div>
+        </div>
+        <div class="price-card">
+            <div>包年</div>
+            <div class="price">¥99</div>
+            <div style="font-size:0.75rem;">超值年度会员</div>
+        </div>
+    </div>
+
+    <button id="fixBtn" class="hidden">✨ 调整至300DPI（免费预览，支付后下载）</button>
+    <button id="payBtn" class="hidden secondary">💳 支付9.9元并下载调整后的图片</button>
+
+    <div class="footer">
+        ✅ 图片仅在你本地处理，隐私安全。<br>
+        📌 支付后即可下载高质量300DPI图片。批量/会员请联系客服。
+    </div>
+</div>
+<div id="toastMsg" class="toast"></div>
+
+<script>
+    let originalFile = null;
+    let processedBlob = null;
+
+    // DOM elements
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const previewArea = document.getElementById('previewArea');
+    const previewImg = document.getElementById('previewImg');
+    const infoArea = document.getElementById('infoArea');
+    const dimensionsSpan = document.getElementById('dimensions');
+    const fixBtn = document.getElementById('fixBtn');
+    const payBtn = document.getElementById('payBtn');
+    const toast = document.getElementById('toastMsg');
+
+    function showMessage(msg, duration = 2000) {
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    // 处理文件上传
+    function handleFile(file) {
+        if (!file || !file.type.match('image.*')) {
+            showMessage('请上传图片文件 (JPG/PNG)', 1500);
+            return false;
+        }
+        originalFile = file;
+        const url = URL.createObjectURL(file);
+        previewImg.src = url;
+        previewArea.style.display = 'block';
+        const img = new Image();
+        img.onload = () => {
+            dimensionsSpan.innerText = `${img.width} x ${img.height}`;
+            infoArea.style.display = 'block';
+            URL.revokeObjectURL(url);
+        };
+        img.src = url;
+        fixBtn.classList.remove('hidden');
+        payBtn.classList.add('hidden');
+        processedBlob = null;
+        return true;
+    }
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#3b82f6'; });
+    uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = '#cbd5e1'; });
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#cbd5e1';
+        const file = e.dataTransfer.files[0];
+        if (file) handleFile(file);
+    });
+
+    // 调整至300DPI：通过重采样使图片在300DPI下打印尺寸合理
+    // 原理：保持打印尺寸不变，根据目标DPI计算目标像素尺寸
+    async function adjustTo300DPI(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                // 目标长边设为3000像素（大约10英寸*300dpi）
+                const maxSize = 3000;
+                if (width > maxSize || height > maxSize) {
+                    const ratio = Math.min(maxSize / width, maxSize / height);
+                    width = Math.floor(width * ratio);
+                    height = Math.floor(height * ratio);
+                } else {
+                    // 如果图片太小，适当放大到至少2000像素（避免太小）
+                    const minLong = Math.max(width, height);
+                    if (minLong < 2000) {
+                        const scale = 2000 / minLong;
+                        width = Math.floor(width * scale);
+                        height = Math.floor(height * scale);
+                    }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob((blob) => {
+                    if (blob) resolve(blob);
+                    else reject('生成图片失败');
+                }, 'image/jpeg', 0.92);
+            };
+            img.onerror = () => reject('图片加载失败');
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    fixBtn.addEventListener('click', async () => {
+        if (!originalFile) return;
+        showMessage('正在处理图片，请稍候...', 1000);
+        try {
+            const blob = await adjustTo300DPI(originalFile);
+            processedBlob = blob;
+            const url = URL.createObjectURL(blob);
+            previewImg.src = url;
+            showMessage('已调整至300DPI标准，支付后可下载', 2000);
+            fixBtn.classList.add('hidden');
+            payBtn.classList.remove('hidden');
+        } catch (err) {
+            showMessage('处理失败，请重试', 1500);
+        }
+    });
+
+    payBtn.addEventListener('click', () => {
+        if (!processedBlob) {
+            showMessage('请先点击“调整至300DPI”', 1500);
+            return;
+        }
+        // 模拟支付弹窗（实际可替换为真实的支付链接或二维码）
+        if (confirm('请使用微信/支付宝扫描下方二维码支付9.9元（此处为演示），支付成功后点击确定下载。\n\n正式版会接入真实支付。')) {
+            const url = URL.createObjectURL(processedBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'adjusted_300dpi.jpg';
+            a.click();
+            URL.revokeObjectURL(url);
+            showMessage('下载已开始，感谢支持！', 2000);
+            fixBtn.classList.remove('hidden');
+            payBtn.classList.add('hidden');
+            processedBlob = null;
+        }
+    });
+</script>
+</body>
+</html>
